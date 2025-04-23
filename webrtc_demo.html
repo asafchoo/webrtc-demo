@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Simple WebRTC via Firebase</title>
+    <style>
+        video { width: 45%; border: 1px solid #ccc; margin: 10px; }
+    </style>
+</head>
+<body>
+    <video id="localVideo" autoplay muted></video>
+    <video id="remoteVideo" autoplay></video>
+    <button onclick="startCall()">Start Call</button>
+    <input type="text" id="roomId" placeholder="Room ID (share with peer)">
+    
+    <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-database-compat.js"></script>
+    <script>
+        const firebaseConfig = {
+			  apiKey: "AIzaSyCHlM47ApiJzYumwOrBix1lXQ6A0d42xSQ",
+			  authDomain: "goldenspahere.firebaseapp.com",
+			  databaseURL: "https://goldenspahere-default-rtdb.firebaseio.com",
+			  projectId: "goldenspahere",
+			  storageBucket: "goldenspahere.firebasestorage.app",
+			  messagingSenderId: "305569434785",
+			  appId: "1:305569434785:web:1ba49bdeae65f311e434e0",
+			  measurementId: "G-K2ECGHN6CQ"
+			};
+
+        firebase.initializeApp(firebaseConfig);
+        const db = firebase.database();
+
+        const servers = { iceServers: [{ urls: 'stun:stun.l.google.com:19302' }] };
+        let pc = new RTCPeerConnection(servers);
+        let localStream;
+
+        pc.ontrack = e => remoteVideo.srcObject = e.streams[0];
+        pc.onicecandidate = e => {
+            if (e.candidate) db.ref(roomInput.value + '/ice').push(JSON.stringify(e.candidate));
+        };
+
+        async function init() {
+            localStream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
+            localVideo.srcObject = localStream;
+            localStream.getTracks().forEach(track => pc.addTrack(track, localStream));
+        }
+        
+        async function startCall() {
+            await init();
+            let offer = await pc.createOffer();
+            await pc.setLocalDescription(offer);
+            db.ref(roomInput.value + '/offer').set(JSON.stringify(pc.localDescription));
+
+            db.ref(roomInput.value + '/answer').on('value', snapshot => {
+                if (snapshot.exists() && !pc.currentRemoteDescription) {
+                    let answer = JSON.parse(snapshot.val());
+                    pc.setRemoteDescription(answer);
+                }
+            });
+
+            db.ref(roomInput.value + '/ice').on('child_added', snapshot => {
+                let candidate = JSON.parse(snapshot.val());
+                pc.addIceCandidate(candidate);
+            });
+        }
+
+        const roomInput = document.getElementById('roomId');
+
+        roomInput.onchange = async () => {
+            await init();
+            db.ref(roomInput.value + '/offer').on('value', async snapshot => {
+                if (snapshot.exists() && !pc.currentRemoteDescription) {
+                    let offer = JSON.parse(snapshot.val());
+                    await pc.setRemoteDescription(offer);
+                    let answer = await pc.createAnswer();
+                    await pc.setLocalDescription(answer);
+                    db.ref(roomInput.value + '/answer').set(JSON.stringify(pc.localDescription));
+                }
+            });
+
+            db.ref(roomInput.value + '/ice').on('child_added', snapshot => {
+                let candidate = JSON.parse(snapshot.val());
+                pc.addIceCandidate(candidate);
+            });
+        };
+    </script>
+</body>
+</html>
