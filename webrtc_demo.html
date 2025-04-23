@@ -1,76 +1,91 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>Simple Manual WebRTC Demo</title>
-    <style>
-        video { width: 45%; border: 1px solid #000; margin: 10px; }
-        textarea { width: 90%; height: 80px; margin: 10px; }
-    </style>
+  <title>WebRTC with Firebase</title>
+  <style>
+    video { width: 45%; margin: 10px; border: 1px solid black; }
+    input { margin: 10px; padding: 5px; font-size: 16px; }
+  </style>
 </head>
 <body>
-    <video id="localVideo" autoplay muted></video>
-    <video id="remoteVideo" autoplay></video>
+  <h2>Simple WebRTC Video Chat (Firebase Signaling)</h2>
+  <video id="localVideo" autoplay muted></video>
+  <video id="remoteVideo" autoplay></video><br>
+  <input id="roomInput" placeholder="Room ID" />
+  <button onclick="startCall()">Start Call</button>
 
-    <br>
-
-    <button onclick="createOffer()">Create Offer</button>
-    <button onclick="createAnswer()">Create Answer</button>
-    <button onclick="setRemoteAnswer()">Set Remote Answer</button>
-    <button onclick="setRemoteOffer()">Set Remote Offer</button>
-
-    <h3>Offer SDP (copy/paste):</h3>
-    <textarea id="offer"></textarea>
-
-    <h3>Answer SDP (copy/paste):</h3>
-    <textarea id="answer"></textarea>
-
-    <script>
-        let pc = new RTCPeerConnection({ iceServers: [{ urls: "stun:stun.l.google.com:19302" }] });
-        let localStream;
-
-        pc.onicecandidate = event => {
-            if (event.candidate === null) {
-                if(pc.localDescription.type === 'offer'){
-                    document.getElementById('offer').value = JSON.stringify(pc.localDescription);
-                } else {
-                    document.getElementById('answer').value = JSON.stringify(pc.localDescription);
-                }
-            }
+  <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-database-compat.js"></script>
+  <script>
+         const firebaseConfig = {
+          apiKey: "AIzaSyCHlM47ApiJzYumwOrBix1lXQ6A0d42xSQ",
+          authDomain: "goldenspahere.firebaseapp.com",
+          databaseURL: "https://goldenspahere-default-rtdb.firebaseio.com",
+          projectId: "goldenspahere",
+          storageBucket: "goldenspahere.firebasestorage.app",
+          messagingSenderId: "305569434785",
+          appId: "1:305569434785:web:1ba49bdeae65f311e434e0",
+          measurementId: "G-K2ECGHN6CQ"
         };
 
-        pc.ontrack = event => {
-            document.getElementById('remoteVideo').srcObject = event.streams[0];
-        };
+    firebase.initializeApp(firebaseConfig);
+    const db = firebase.database();
 
-        async function start() {
-            localStream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
-            document.getElementById('localVideo').srcObject = localStream;
-            localStream.getTracks().forEach(track => pc.addTrack(track, localStream));
-        }
+    const servers = { iceServers: [{ urls: "stun:stun.l.google.com:19302" }] };
+    let pc = new RTCPeerConnection(servers);
+    let localStream;
+    const roomInput = document.getElementById("roomInput");
 
-        async function createOffer() {
-            await start();
-            const offer = await pc.createOffer();
-            await pc.setLocalDescription(offer);
-        }
+    pc.ontrack = e => {
+      document.getElementById("remoteVideo").srcObject = e.streams[0];
+    };
 
-        async function createAnswer() {
-            await start();
-            const offer = JSON.parse(document.getElementById('offer').value);
-            await pc.setRemoteDescription(new RTCSessionDescription(offer));
-            const answer = await pc.createAnswer();
-            await pc.setLocalDescription(answer);
-        }
+    pc.onicecandidate = e => {
+      if (e.candidate) {
+        db.ref(roomInput.value + "/ice").push(JSON.stringify(e.candidate));
+      }
+    };
 
-        async function setRemoteAnswer() {
-            const answer = JSON.parse(document.getElementById('answer').value);
-            await pc.setRemoteDescription(new RTCSessionDescription(answer));
-        }
+    async function startMedia() {
+      localStream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
+      document.getElementById("localVideo").srcObject = localStream;
+      localStream.getTracks().forEach(track => pc.addTrack(track, localStream));
+    }
 
-        async function setRemoteOffer() {
-            const offer = JSON.parse(document.getElementById('offer').value);
-            await pc.setRemoteDescription(new RTCSessionDescription(offer));
+    async function startCall() {
+      await startMedia();
+      const roomId = roomInput.value;
+
+      // Check if offer exists
+      const offerSnap = await db.ref(roomId + "/offer").get();
+      if (offerSnap.exists()) {
+        // Join existing call
+        const offer = JSON.parse(offerSnap.val());
+        await pc.setRemoteDescription(new RTCSessionDescription(offer));
+        const answer = await pc.createAnswer();
+        await pc.setLocalDescription(answer);
+        db.ref(roomId + "/answer").set(JSON.stringify(answer));
+      } else {
+        // Create new call
+        const offer = await pc.createOffer();
+        await pc.setLocalDescription(offer);
+        db.ref(roomId + "/offer").set(JSON.stringify(offer));
+      }
+
+      // Listen for answer
+      db.ref(roomId + "/answer").on("value", async snap => {
+        if (snap.exists() && !pc.currentRemoteDescription) {
+          const answer = JSON.parse(snap.val());
+          await pc.setRemoteDescription(answer);
         }
-    </script>
+      });
+
+      // Listen for ICE candidates
+      db.ref(roomId + "/ice").on("child_added", snap => {
+        const candidate = JSON.parse(snap.val());
+        pc.addIceCandidate(new RTCIceCandidate(candidate));
+      });
+    }
+  </script>
 </body>
 </html>
