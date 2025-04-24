@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <title>WebRTC Firebase Demo - Final Debug Version</title>
+  <title>2WebRTC Firebase Demo - Final Debug Version</title>
   <style>
     video {
       width: 45%;
@@ -47,28 +47,27 @@
     let localStream;
     const roomInput = document.getElementById("roomId");
 
-    pc.ontrack = event => {
-      console.log("Remote track received");
-      const stream = event.streams[0];
-
-      console.log("Remote stream tracks:", stream.getTracks());
-      console.log("Remote video tracks:", stream.getVideoTracks());
-
+   pc.ontrack = event => {
+      console.log("Remote track received:", event.track.kind);
+    
+      remoteStream.addTrack(event.track);
+    
       const remoteVideo = document.getElementById("remoteVideo");
-      remoteVideo.srcObject = stream;
-
+      remoteVideo.srcObject = remoteStream;
+    
       remoteVideo.onloadedmetadata = () => {
         console.log("Remote video metadata loaded — attempting to play");
         remoteVideo.play()
-          .then(() => console.log("Remote video is playing ✅"))
-          .catch(err => console.error("Remote video play() failed ❌:", err));
+          .then(() => console.log("✅ Remote video playing"))
+          .catch(err => console.error("❌ remoteVideo.play() failed:", err));
       };
-
+    
       setTimeout(() => {
         remoteVideo.play()
-          .then(() => console.log("Remote video forced play() succeeded ✅"))
-          .catch(err => console.error("Remote video forced play() failed ❌:", err));
+          .then(() => console.log("✅ Remote video forced play succeeded"))
+          .catch(err => console.error("❌ remoteVideo forced play failed:", err));
       }, 1000);
+    };
 
       // Canvas debug
       const canvas = document.createElement("canvas");
