@@ -1,25 +1,28 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <title>6 - WebRTC Firebase Demo</title>
+  <title>WebRTC Firebase Demo - Final Debug Version</title>
   <style>
     video {
       width: 45%;
       margin: 10px;
-      border: 1px solid #ccc;
+      border: 2px solid red;
     }
     input {
       margin: 10px;
       padding: 5px;
       font-size: 16px;
     }
+    canvas {
+      border: 2px solid green;
+      margin-top: 20px;
+    }
   </style>
 </head>
 <body>
-  <h2>WebRTC Video Chat (Firebase Signaling)</h2>
-  <video id="localVideo" autoplay muted playsinline style="border: 4px solid blue; width: 45%; height: auto;"></video>
-  <video id="remoteVideo" autoplay playsinline style="border: 4px solid red; width: 45%; height: auto;"></video><br>
-  <button onclick="remoteVideo.play()">Force Play</button>
+  <h2>WebRTC Video Chat with Debugging</h2>
+  <video id="localVideo" autoplay muted playsinline></video>
+  <video id="remoteVideo" autoplay playsinline></video><br>
   <input type="text" id="roomId" placeholder="Room ID (share with peer)">
   <button onclick="startCall()">Start Call</button>
 
@@ -41,66 +44,71 @@
     const servers = { iceServers: [{ urls: 'stun:stun.l.google.com:19302' }] };
 
     let pc = new RTCPeerConnection(servers);
-
-    pc.ontrack = event => {
-    console.log("Remote track received");
-  
-    const remoteStream = event.streams[0];
-    const remoteVideo = document.getElementById("remoteVideo");
-  
-    console.log("Remote stream tracks:", remoteStream.getTracks());
-    console.log("Remote video tracks:", remoteStream.getVideoTracks());
-  
-    remoteVideo.srcObject = null; // force reset
-    remoteVideo.srcObject = remoteStream;
-
-    console.log("remoteVideo element:", remoteVideo);
-    console.log("remoteVideo.srcObject:", remoteVideo.srcObject);
-  
-    remoteVideo.onloadedmetadata = () => {
-      console.log("Remote video metadata loaded — attempting to play");
-      remoteVideo.play()
-        .then(() => console.log("Remote video is playing ✅"))
-        .catch(error => console.error("Remote video play() failed ❌:", error));
-    };
-  
-    // Also trigger play a second time just in case
-    setTimeout(() => {
-      remoteVideo.play()
-        .then(() => console.log("Remote video forced play() succeeded ✅"))
-        .catch(error => console.error("Remote video forced play() failed ❌:", error));
-    }, 1000);
-  };
     let localStream;
     const roomInput = document.getElementById("roomId");
 
-   
+    pc.ontrack = event => {
+      console.log("Remote track received");
+      const stream = event.streams[0];
+
+      console.log("Remote stream tracks:", stream.getTracks());
+      console.log("Remote video tracks:", stream.getVideoTracks());
+
+      const remoteVideo = document.getElementById("remoteVideo");
+      remoteVideo.srcObject = stream;
+
+      remoteVideo.onloadedmetadata = () => {
+        console.log("Remote video metadata loaded — attempting to play");
+        remoteVideo.play()
+          .then(() => console.log("Remote video is playing ✅"))
+          .catch(err => console.error("Remote video play() failed ❌:", err));
+      };
+
+      setTimeout(() => {
+        remoteVideo.play()
+          .then(() => console.log("Remote video forced play() succeeded ✅"))
+          .catch(err => console.error("Remote video forced play() failed ❌:", err));
+      }, 1000);
+
+      // Canvas debug
+      const canvas = document.createElement("canvas");
+      canvas.width = 640;
+      canvas.height = 480;
+      document.body.appendChild(canvas);
+      const ctx = canvas.getContext("2d");
+      setInterval(() => {
+        ctx.drawImage(remoteVideo, 0, 0, 640, 480);
+      }, 1000);
+    };
 
     async function init() {
-  try {
-    const stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
+      try {
+        const stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
 
-    const localVideo = document.getElementById("localVideo");
-    localVideo.srcObject = stream;
+        const localVideo = document.getElementById("localVideo");
+        localVideo.srcObject = stream;
+        console.log("Local stream initialized");
+        console.log("Local stream tracks:", stream.getTracks());
+        console.log("Local video tracks:", stream.getVideoTracks());
 
-    console.log("Local stream initialized");
-    console.log("Local stream tracks:", stream.getTracks());
-    console.log("Local video tracks:", stream.getVideoTracks());
+        localStream = stream;
 
-    stream.getVideoTracks().forEach(track => {
-      console.log("Adding video track:", track);
-      pc.addTrack(track, stream);
-    });
-    stream.getAudioTracks().forEach(track => {
-      console.log("Adding audio track:", track);
-      pc.addTrack(track, stream);
-    });
+        const videoTransceiver = pc.addTransceiver('video', { direction: 'sendrecv' });
+        const audioTransceiver = pc.addTransceiver('audio', { direction: 'sendrecv' });
 
-    localStream = stream;
-  } catch (err) {
-    console.error("Error accessing media devices:", err);
-  }
-}
+        stream.getVideoTracks().forEach(track => {
+          console.log("Adding video track:", track);
+          videoTransceiver.sender.replaceTrack(track);
+        });
+        stream.getAudioTracks().forEach(track => {
+          console.log("Adding audio track:", track);
+          audioTransceiver.sender.replaceTrack(track);
+        });
+
+      } catch (err) {
+        console.error("Error accessing media devices:", err);
+      }
+    }
 
     async function startCall() {
       await init();
@@ -108,7 +116,6 @@
       const roomRef = db.ref(roomId);
       const callerCandidatesRef = roomRef.child("callerCandidates");
 
-      console.log("Caller: setting up ICE handler");
       pc.onicecandidate = event => {
         if (event.candidate) {
           console.log("Caller: sending ICE candidate");
@@ -116,10 +123,9 @@
         }
       };
 
-      console.log("Caller: creating offer");
       const offer = await pc.createOffer();
       await pc.setLocalDescription(offer);
-      console.log("Caller: offer set");
+      console.log("Caller: offer created");
 
       await roomRef.child("offer").set(JSON.stringify(offer));
 
@@ -133,8 +139,8 @@
 
       roomRef.child("calleeCandidates").on("child_added", snapshot => {
         const candidate = JSON.parse(snapshot.val());
-        console.log("Caller: received ICE from callee");
         pc.addIceCandidate(new RTCIceCandidate(candidate));
+        console.log("Caller: received ICE from callee");
       });
     }
 
@@ -144,12 +150,10 @@
       const roomRef = db.ref(roomId);
       const calleeCandidatesRef = roomRef.child("calleeCandidates");
 
-      console.log("Callee: joined room", roomId);
-
       pc.onicecandidate = event => {
         if (event.candidate) {
-          console.log("Callee: sending ICE candidate");
           calleeCandidatesRef.push(JSON.stringify(event.candidate));
+          console.log("Callee: sending ICE candidate");
         }
       };
 
@@ -161,16 +165,15 @@
 
           const answer = await pc.createAnswer();
           await pc.setLocalDescription(answer);
-          console.log("Callee: sending answer");
-
           await roomRef.child("answer").set(JSON.stringify(answer));
+          console.log("Callee: sent answer");
         }
       });
 
       roomRef.child("callerCandidates").on("child_added", snapshot => {
         const candidate = JSON.parse(snapshot.val());
-        console.log("Callee: received ICE from caller");
         pc.addIceCandidate(new RTCIceCandidate(candidate));
+        console.log("Callee: received ICE from caller");
       });
     };
   </script>
