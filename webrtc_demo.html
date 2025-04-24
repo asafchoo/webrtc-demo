@@ -45,19 +45,22 @@
 
     pc.ontrack = event => {
       console.log("Remote track received");
-
+    
       const remoteVideo = document.getElementById("remoteVideo");
-      if (!remoteVideo.srcObject) {
-        remoteVideo.srcObject = event.streams[0];
-        console.log("Remote stream attached");
-
-        remoteVideo.onloadedmetadata = () => {
-          console.log("Remote video metadata loaded — trying to play");
-          remoteVideo.play()
-            .then(() => console.log("Remote video playing"))
-            .catch(err => console.error("Remote video play failed:", err));
-        };
-      }
+    
+      // Debug: show what tracks are coming in
+      const stream = event.streams[0];
+      console.log("Remote stream tracks:", stream.getTracks());
+      console.log("Remote video tracks:", stream.getVideoTracks());
+    
+      remoteVideo.srcObject = stream;
+    
+      remoteVideo.onloadedmetadata = () => {
+        console.log("Remote video metadata loaded — trying to play");
+        remoteVideo.play()
+          .then(() => console.log("Remote video playing"))
+          .catch(err => console.error("Remote video play failed:", err));
+      };
     };
 
     async function init() {
