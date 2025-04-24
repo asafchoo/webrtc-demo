@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <title>WebRTC Firebase Demo - ver 1</title>
+  <title>WebRTC Firebase Demo - ver 2</title>
   <style>
     video {
       width: 45%;
@@ -43,25 +43,32 @@
     let localStream;
     const roomInput = document.getElementById("roomId");
 
-    pc.ontrack = event => {
-      console.log("Remote track received");
-    
-      const remoteVideo = document.getElementById("remoteVideo");
-    
-      // Debug: show what tracks are coming in
-      const stream = event.streams[0];
-      console.log("Remote stream tracks:", stream.getTracks());
-      console.log("Remote video tracks:", stream.getVideoTracks());
-    
-      remoteVideo.srcObject = stream;
-    
-      remoteVideo.onloadedmetadata = () => {
-        console.log("Remote video metadata loaded — trying to play");
-        remoteVideo.play()
-          .then(() => console.log("Remote video playing"))
-          .catch(err => console.error("Remote video play failed:", err));
-      };
+   pc.ontrack = event => {
+    console.log("Remote track received");
+  
+    const remoteStream = event.streams[0];
+    const remoteVideo = document.getElementById("remoteVideo");
+  
+    console.log("Remote stream tracks:", remoteStream.getTracks());
+    console.log("Remote video tracks:", remoteStream.getVideoTracks());
+  
+    remoteVideo.srcObject = null; // force reset
+    remoteVideo.srcObject = remoteStream;
+  
+    remoteVideo.onloadedmetadata = () => {
+      console.log("Remote video metadata loaded — attempting to play");
+      remoteVideo.play()
+        .then(() => console.log("Remote video is playing ✅"))
+        .catch(error => console.error("Remote video play() failed ❌:", error));
     };
+  
+    // Also trigger play a second time just in case
+    setTimeout(() => {
+      remoteVideo.play()
+        .then(() => console.log("Remote video forced play() succeeded ✅"))
+        .catch(error => console.error("Remote video forced play() failed ❌:", error));
+    }, 1000);
+  };
 
     async function init() {
   try {
