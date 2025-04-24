@@ -7,7 +7,7 @@
     input { margin: 10px; padding: 5px; font-size: 16px; }
   </style>
 </head>
-<body> <!-- 1.5 version -->
+<body> <!-- 1.6 version -->
   <h2>WebRTC Firebase Demo with Debug Logs</h2>
   <video id="localVideo" autoplay muted></video>
   <video id="remoteVideo" autoplay></video><br>
@@ -35,10 +35,18 @@
     let localStream;
     const roomInput = document.getElementById("roomId");
 
-    pc.ontrack = e => {
+   pc.ontrack = e => {
       console.log("Remote track received");
-      document.getElementById("remoteVideo").srcObject = e.streams[0];
-    };
+    
+      const remoteVideo = document.getElementById("remoteVideo");
+      remoteVideo.srcObject = e.streams[0];
+    
+      remoteVideo.onloadedmetadata = () => {
+        console.log("Remote video metadata loaded — playing");
+        remoteVideo.play().catch(err => console.error("Remote video play failed", err));
+      };
+  };
+
 
     async function init() {
       try {
