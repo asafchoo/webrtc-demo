@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <title>ver3 - WebRTC Firebase Demo</title>
+  <title>ver4 - WebRTC Firebase Demo</title>
   <style>
     video {
       width: 45%;
@@ -52,6 +52,9 @@
   
     remoteVideo.srcObject = null; // force reset
     remoteVideo.srcObject = remoteStream;
+
+    console.log("remoteVideo element:", remoteVideo);
+    console.log("remoteVideo.srcObject:", remoteVideo.srcObject);
   
     remoteVideo.onloadedmetadata = () => {
       console.log("Remote video metadata loaded — attempting to play");
