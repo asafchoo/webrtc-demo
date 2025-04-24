@@ -1,16 +1,24 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <title>WebRTC with Firebase</title>
+  <title>WebRTC Firebase Demo</title>
   <style>
-    video { width: 45%; border: 1px solid #ccc; margin: 10px; }
-    input { margin: 10px; padding: 5px; font-size: 16px; }
+    video {
+      width: 45%;
+      margin: 10px;
+      border: 1px solid #ccc;
+    }
+    input {
+      margin: 10px;
+      padding: 5px;
+      font-size: 16px;
+    }
   </style>
 </head>
-<body> <!-- 1.6 version -->
-  <h2>WebRTC Firebase Demo with Debug Logs</h2>
-  <video id="localVideo" autoplay muted></video>
-  <video id="remoteVideo" autoplay></video><br>
+<body>
+  <h2>WebRTC Video Chat (Firebase Signaling)</h2>
+  <video id="localVideo" autoplay muted playsinline></video>
+  <video id="remoteVideo" autoplay playsinline></video><br>
   <input type="text" id="roomId" placeholder="Room ID (share with peer)">
   <button onclick="startCall()">Start Call</button>
 
@@ -29,29 +37,34 @@
 
     firebase.initializeApp(firebaseConfig);
     const db = firebase.database();
-
     const servers = { iceServers: [{ urls: 'stun:stun.l.google.com:19302' }] };
+
     let pc = new RTCPeerConnection(servers);
     let localStream;
     const roomInput = document.getElementById("roomId");
 
-   pc.ontrack = e => {
+    pc.ontrack = event => {
       console.log("Remote track received");
-    
-      const remoteVideo = document.getElementById("remoteVideo");
-      remoteVideo.srcObject = e.streams[0];
-    
-      remoteVideo.onloadedmetadata = () => {
-        console.log("Remote video metadata loaded — playing");
-        remoteVideo.play().catch(err => console.error("Remote video play failed", err));
-      };
-  };
 
+      const remoteVideo = document.getElementById("remoteVideo");
+      if (!remoteVideo.srcObject) {
+        remoteVideo.srcObject = event.streams[0];
+        console.log("Remote stream attached");
+
+        remoteVideo.onloadedmetadata = () => {
+          console.log("Remote video metadata loaded — trying to play");
+          remoteVideo.play()
+            .then(() => console.log("Remote video playing"))
+            .catch(err => console.error("Remote video play failed:", err));
+        };
+      }
+    };
 
     async function init() {
       try {
         localStream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
-        document.getElementById("localVideo").srcObject = localStream;
+        const localVideo = document.getElementById("localVideo");
+        localVideo.srcObject = localStream;
         localStream.getTracks().forEach(track => pc.addTrack(track, localStream));
         console.log("Local stream initialized");
       } catch (err) {
@@ -65,7 +78,7 @@
       const roomRef = db.ref(roomId);
       const callerCandidatesRef = roomRef.child("callerCandidates");
 
-      console.log("Caller: setting up ICE candidate handler");
+      console.log("Caller: setting up ICE handler");
       pc.onicecandidate = event => {
         if (event.candidate) {
           console.log("Caller: sending ICE candidate");
@@ -76,7 +89,7 @@
       console.log("Caller: creating offer");
       const offer = await pc.createOffer();
       await pc.setLocalDescription(offer);
-      console.log("Caller: offer created and set");
+      console.log("Caller: offer set");
 
       await roomRef.child("offer").set(JSON.stringify(offer));
 
@@ -90,7 +103,7 @@
 
       roomRef.child("calleeCandidates").on("child_added", snapshot => {
         const candidate = JSON.parse(snapshot.val());
-        console.log("Caller: received ICE candidate from callee");
+        console.log("Caller: received ICE from callee");
         pc.addIceCandidate(new RTCIceCandidate(candidate));
       });
     }
@@ -126,7 +139,7 @@
 
       roomRef.child("callerCandidates").on("child_added", snapshot => {
         const candidate = JSON.parse(snapshot.val());
-        console.log("Callee: received ICE candidate from caller");
+        console.log("Callee: received ICE from caller");
         pc.addIceCandidate(new RTCIceCandidate(candidate));
       });
     };
