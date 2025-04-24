@@ -64,16 +64,30 @@
     };
 
     async function init() {
-      try {
-        localStream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
-        const localVideo = document.getElementById("localVideo");
-        localVideo.srcObject = localStream;
-        localStream.getTracks().forEach(track => pc.addTrack(track, localStream));
-        console.log("Local stream initialized");
-      } catch (err) {
-        console.error("Error accessing media devices:", err);
-      }
-    }
+  try {
+    const stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
+
+    const localVideo = document.getElementById("localVideo");
+    localVideo.srcObject = stream;
+
+    console.log("Local stream initialized");
+    console.log("Local stream tracks:", stream.getTracks());
+    console.log("Local video tracks:", stream.getVideoTracks());
+
+    stream.getVideoTracks().forEach(track => {
+      console.log("Adding video track:", track);
+      pc.addTrack(track, stream);
+    });
+    stream.getAudioTracks().forEach(track => {
+      console.log("Adding audio track:", track);
+      pc.addTrack(track, stream);
+    });
+
+    localStream = stream;
+  } catch (err) {
+    console.error("Error accessing media devices:", err);
+  }
+}
 
     async function startCall() {
       await init();
