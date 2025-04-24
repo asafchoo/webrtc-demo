@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <title>ver5 - WebRTC Firebase Demo</title>
+  <title>6 - WebRTC Firebase Demo</title>
   <style>
     video {
       width: 45%;
@@ -19,6 +19,7 @@
   <h2>WebRTC Video Chat (Firebase Signaling)</h2>
   <video id="localVideo" autoplay muted playsinline style="border: 4px solid blue; width: 45%; height: auto;"></video>
   <video id="remoteVideo" autoplay playsinline style="border: 4px solid red; width: 45%; height: auto;"></video><br>
+  <button onclick="remoteVideo.play()">Force Play</button>
   <input type="text" id="roomId" placeholder="Room ID (share with peer)">
   <button onclick="startCall()">Start Call</button>
 
