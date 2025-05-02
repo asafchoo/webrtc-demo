@@ -1,29 +1,17 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <title>2WebRTC Firebase Demo - Final Debug Version</title>
+  <title>WebRTC with Firebase</title>
   <style>
-    video {
-      width: 45%;
-      margin: 10px;
-      border: 2px solid red;
-    }
-    input {
-      margin: 10px;
-      padding: 5px;
-      font-size: 16px;
-    }
-    canvas {
-      border: 2px solid green;
-      margin-top: 20px;
-    }
+    video { width: 45%; margin: 10px; border: 1px solid black; }
+    input { margin: 10px; padding: 5px; font-size: 16px; }
   </style>
 </head>
 <body>
-  <h2>WebRTC Video Chat with Debugging</h2>
-  <video id="localVideo" autoplay muted playsinline></video>
-  <video id="remoteVideo" autoplay playsinline></video><br>
-  <input type="text" id="roomId" placeholder="Room ID (share with peer)">
+  <h2>Simple WebRTC Video Chat (Firebase Signaling)</h2>
+  <video id="localVideo" autoplay muted></video>
+  <video id="remoteVideo" autoplay></video><br>
+  <input id="roomInput" placeholder="Room ID" />
   <button onclick="startCall()">Start Call</button>
 
   <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
@@ -38,143 +26,64 @@
       messagingSenderId: "305569434785",
       appId: "1:305569434785:web:1ba49bdeae65f311e434e0"
     };
-
     firebase.initializeApp(firebaseConfig);
     const db = firebase.database();
-    const servers = { iceServers: [{ urls: 'stun:stun.l.google.com:19302' }] };
 
+    const servers = { iceServers: [{ urls: "stun:stun.l.google.com:19302" }] };
     let pc = new RTCPeerConnection(servers);
     let localStream;
-    const roomInput = document.getElementById("roomId");
+    const roomInput = document.getElementById("roomInput");
 
-   pc.ontrack = event => {
-      console.log("Remote track received:", event.track.kind);
-    
-      remoteStream.addTrack(event.track);
-    
-      const remoteVideo = document.getElementById("remoteVideo");
-      remoteVideo.srcObject = remoteStream;
-    
-      remoteVideo.onloadedmetadata = () => {
-        console.log("Remote video metadata loaded — attempting to play");
-        remoteVideo.play()
-          .then(() => console.log("✅ Remote video playing"))
-          .catch(err => console.error("❌ remoteVideo.play() failed:", err));
-      };
-    
-      setTimeout(() => {
-        remoteVideo.play()
-          .then(() => console.log("✅ Remote video forced play succeeded"))
-          .catch(err => console.error("❌ remoteVideo forced play failed:", err));
-      }, 1000);
+    pc.ontrack = e => {
+      document.getElementById("remoteVideo").srcObject = e.streams[0];
     };
 
-      // Canvas debug
-      const canvas = document.createElement("canvas");
-      canvas.width = 640;
-      canvas.height = 480;
-      document.body.appendChild(canvas);
-      const ctx = canvas.getContext("2d");
-      setInterval(() => {
-        ctx.drawImage(remoteVideo, 0, 0, 640, 480);
-      }, 1000);
-    };
-
-    async function init() {
-      try {
-        const stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
-
-        const localVideo = document.getElementById("localVideo");
-        localVideo.srcObject = stream;
-        console.log("Local stream initialized");
-        console.log("Local stream tracks:", stream.getTracks());
-        console.log("Local video tracks:", stream.getVideoTracks());
-
-        localStream = stream;
-
-        const videoTransceiver = pc.addTransceiver('video', { direction: 'sendrecv' });
-        const audioTransceiver = pc.addTransceiver('audio', { direction: 'sendrecv' });
-
-        stream.getVideoTracks().forEach(track => {
-          console.log("Adding video track:", track);
-          videoTransceiver.sender.replaceTrack(track);
-        });
-        stream.getAudioTracks().forEach(track => {
-          console.log("Adding audio track:", track);
-          audioTransceiver.sender.replaceTrack(track);
-        });
-
-      } catch (err) {
-        console.error("Error accessing media devices:", err);
+    pc.onicecandidate = e => {
+      if (e.candidate) {
+        db.ref(roomInput.value + "/ice").push(JSON.stringify(e.candidate));
       }
+    };
+
+    async function startMedia() {
+      localStream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
+      document.getElementById("localVideo").srcObject = localStream;
+      localStream.getTracks().forEach(track => pc.addTrack(track, localStream));
     }
 
     async function startCall() {
-      await init();
+      await startMedia();
       const roomId = roomInput.value;
-      const roomRef = db.ref(roomId);
-      const callerCandidatesRef = roomRef.child("callerCandidates");
 
-      pc.onicecandidate = event => {
-        if (event.candidate) {
-          console.log("Caller: sending ICE candidate");
-          callerCandidatesRef.push(JSON.stringify(event.candidate));
-        }
-      };
+      // Check if offer exists
+      const offerSnap = await db.ref(roomId + "/offer").get();
+      if (offerSnap.exists()) {
+        // Join existing call
+        const offer = JSON.parse(offerSnap.val());
+        await pc.setRemoteDescription(new RTCSessionDescription(offer));
+        const answer = await pc.createAnswer();
+        await pc.setLocalDescription(answer);
+        db.ref(roomId + "/answer").set(JSON.stringify(answer));
+      } else {
+        // Create new call
+        const offer = await pc.createOffer();
+        await pc.setLocalDescription(offer);
+        db.ref(roomId + "/offer").set(JSON.stringify(offer));
+      }
 
-      const offer = await pc.createOffer();
-      await pc.setLocalDescription(offer);
-      console.log("Caller: offer created");
-
-      await roomRef.child("offer").set(JSON.stringify(offer));
-
-      roomRef.child("answer").on("value", async snapshot => {
-        if (snapshot.exists() && !pc.currentRemoteDescription) {
-          const answer = JSON.parse(snapshot.val());
-          console.log("Caller: received answer");
+      // Listen for answer
+      db.ref(roomId + "/answer").on("value", async snap => {
+        if (snap.exists() && !pc.currentRemoteDescription) {
+          const answer = JSON.parse(snap.val());
           await pc.setRemoteDescription(answer);
         }
       });
 
-      roomRef.child("calleeCandidates").on("child_added", snapshot => {
-        const candidate = JSON.parse(snapshot.val());
+      // Listen for ICE candidates
+      db.ref(roomId + "/ice").on("child_added", snap => {
+        const candidate = JSON.parse(snap.val());
         pc.addIceCandidate(new RTCIceCandidate(candidate));
-        console.log("Caller: received ICE from callee");
       });
     }
-
-    roomInput.onchange = async () => {
-      await init();
-      const roomId = roomInput.value;
-      const roomRef = db.ref(roomId);
-      const calleeCandidatesRef = roomRef.child("calleeCandidates");
-
-      pc.onicecandidate = event => {
-        if (event.candidate) {
-          calleeCandidatesRef.push(JSON.stringify(event.candidate));
-          console.log("Callee: sending ICE candidate");
-        }
-      };
-
-      roomRef.child("offer").on("value", async snapshot => {
-        if (snapshot.exists() && !pc.currentRemoteDescription) {
-          const offer = JSON.parse(snapshot.val());
-          console.log("Callee: received offer");
-          await pc.setRemoteDescription(offer);
-
-          const answer = await pc.createAnswer();
-          await pc.setLocalDescription(answer);
-          await roomRef.child("answer").set(JSON.stringify(answer));
-          console.log("Callee: sent answer");
-        }
-      });
-
-      roomRef.child("callerCandidates").on("child_added", snapshot => {
-        const candidate = JSON.parse(snapshot.val());
-        pc.addIceCandidate(new RTCIceCandidate(candidate));
-        console.log("Callee: received ICE from caller");
-      });
-    };
   </script>
 </body>
 </html>
