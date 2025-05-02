@@ -1,7 +1,7 @@
 {
   "name": "WebRTC Chat",
   "short_name": "Video Chat",
-  "start_url": "/webrtc_demo.html",
+  "start_url": "/webrtc-demo/webrtc_demo.html",
   "display": "standalone",
   "background_color": "#ffffff",
   "theme_color": "#000000",
