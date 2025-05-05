@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Login - Golden Sphere</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background-color: #f2f2f2;
+      text-align: center;
+      padding: 40px 20px;
+    }
+
+    h2 {
+      margin-bottom: 30px;
+    }
+
+    input, button {
+      display: block;
+      width: 80%;
+      max-width: 300px;
+      padding: 12px;
+      margin: 10px auto;
+      font-size: 16px;
+      border-radius: 6px;
+      border: 1px solid #ccc;
+    }
+
+    button {
+      background-color: #444;
+      color: white;
+      border: none;
+      cursor: pointer;
+    }
+
+    button:hover {
+      background-color: #666;
+    }
+
+    .error {
+      color: red;
+      margin-top: 10px;
+    }
+  </style>
+</head>
+<body>
+
+  <h2>Welcome to Golden Sphere</h2>
+  <input type="text" id="username" placeholder="Username">
+  <input type="password" id="password" placeholder="Password">
+  <button onclick="validateLogin()">Login</button>
+  <div id="error" class="error"></div>
+
+  <script>
+    function validateLogin() {
+      const user = document.getElementById('username').value.trim();
+      const pass = document.getElementById('password').value.trim();
+      const errorDiv = document.getElementById('error');
+
+      if (
+        (user === "yaffa" && pass === "123456") ||
+        (user === "bar" && pass === "654321")
+      ) {
+        window.location.href = "list.html";
+      } else {
+        errorDiv.textContent = "Invalid username or password.";
+      }
+    }
+  </script>
+</body>
+</html>
