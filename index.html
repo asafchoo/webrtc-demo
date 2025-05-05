@@ -58,8 +58,10 @@
       const pass = document.getElementById('password').value.trim();
       const errorDiv = document.getElementById('error');
 
-      if (user === "yaffa" && pass === "123456") window.location.href = "video.html";
-      else if (user === "admin" && pass === "654321") window.location.href = "list.html"
+      if (user === "yaffa" && pass === "123456") {
+        window.location.href = "video.html";
+      } else if (user === "admin" && pass === "654321") {
+       window.location.href = "list.html"
       } else {
         errorDiv.textContent = "Invalid username or password.";
       }
