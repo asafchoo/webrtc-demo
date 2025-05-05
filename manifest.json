@@ -1,7 +1,7 @@
 {
   "name": "GOLDEN SPHERE",
   "short_name": "GOLDENSPHERE",
-  "start_url": "/webrtc-demo/webrtc_demo.html",
+  "start_url": "/webrtc-demo/index.html",
   "display": "standalone",
   "background_color": "#ffffff",
   "theme_color": "#000000",
