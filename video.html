@@ -15,16 +15,19 @@
     .name {font-weight: bold; margin: 10px 0}
     .stars {color: gold; font-size: 20px}
     .call-button {margin-top: 10px; display: inline-block; background-color: #222; color: #fff; padding: 8px 14px;  border-radius: 5px; text-decoration: none; font-size: 14px}
+    #videoContainer {position: relative; display: flex; justify-content: center; align-items: center; height: 70vh;  margin-bottom: 20px}
+    #remoteVideo {width: 90%; max-height: 100%; border-radius: 10px; background: #000}
+    #localVideo {position: absolute; width: 23%; left: 10px; bottom: 10px; border: 2px solid #fff; border-radius: 8px; box-shadow: 0 0 8px rgba(0,0,0,0.6)}
   </style>
 </head>
 <body>
-  <h2>GOLDEN SPHERE - Video Room ver 1.0</h2>
+  <h2>GOLDEN SPHERE - Video Room ver 1.1</h2>
   <div><input id="roomInput" placeholder="Room ID" />
   <button class="call-button" onclick="startCall()">Start Call</button></div>
-  
-  <video id="localVideo" autoplay muted></video>
-  <video id="remoteVideo" autoplay></video><br>
- 
+  <div id="videoContainer">
+    <video id="localVideo" autoplay muted></video>
+    <video id="remoteVideo" autoplay></video><br>
+  </div>
 
   <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-database-compat.js"></script>
