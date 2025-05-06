@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Golden Sphere - Personal Profile</title>
+  <link rel="manifest" href="manifest.json">
+  <meta name="theme-color" content="#000000">
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background-color: #f4f4f4;
+      margin: 0;
+      padding: 0;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      color: #333;
+    }
+
+    header {
+      width: 100%;
+      background-color: #222;
+      color: #fff;
+      padding: 15px;
+      text-align: center;
+    }
+
+    .profile-container {
+      max-width: 900px;
+      width: 95%;
+      background: #fff;
+      margin: 20px;
+      border-radius: 10px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .profile-header {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 20px;
+    }
+
+    .profile-header img {
+      width: 150px;
+      height: 150px;
+      object-fit: cover;
+      border-radius: 50%;
+      border: 4px solid #ccc;
+      margin-bottom: 15px;
+    }
+
+    .profile-header h2 {
+      margin: 5px 0;
+    }
+
+    .profile-header p {
+      margin: 3px 0;
+      color: #666;
+    }
+
+    .profile-body {
+      padding: 20px;
+    }
+
+    .section {
+      margin-bottom: 20px;
+    }
+
+    .section h3 {
+      margin-bottom: 10px;
+      color: #444;
+      border-bottom: 1px solid #ddd;
+      padding-bottom: 5px;
+    }
+
+    .section ul {
+      list-style: none;
+      padding: 0;
+    }
+
+    .section ul li {
+      margin: 6px 0;
+    }
+
+    .star-rating {
+      color: gold;
+      font-size: 1.3em;
+    }
+
+    @media screen and (min-width: 768px) {
+      .profile-container {
+        flex-direction: row;
+      }
+      .profile-header, .profile-body {
+        flex: 1;
+      }
+      .profile-header {
+        border-right: 1px solid #eee;
+        padding: 30px;
+      }
+      .profile-body {
+        padding: 30px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>Golden Sphere - Profile</h1>
+  </header>
+
+  <div class="profile-container">
+    <div class="profile-header">
+      <img src="https://i.pravatar.cc/300?img=10" alt="Elderly Person">
+      <h2>Sarah Azulay</h2>
+      <p>Age: 78</p>
+      <p>Location: Haifa, Israel</p>
+      <div class="star-rating">★★★★☆</div>
+    </div>
+
+    <div class="profile-body">
+      <div class="section">
+        <h3>About</h3>
+        <p>Sarah is a warm and sociable retired nurse who enjoys storytelling, baking, and meeting new people. She lives close to her family and likes regular video calls with her grandchildren.</p>
+      </div>
+
+      <div class="section">
+        <h3>Interests</h3>
+        <ul>
+          <li>Cooking and baking</li>
+          <li>Classical music</li>
+          <li>Watching Israeli TV dramas</li>
+          <li>Gardening on her small balcony</li>
+        </ul>
+      </div>
+
+      <div class="section">
+        <h3>Contact Options</h3>
+        <p><strong>Preferred Time:</strong> Afternoons (13:00–17:00)</p>
+        <a href="webrtc_demo.html" style="text-decoration: none; background-color: #222; color: #fff; padding: 10px 20px; border-radius: 5px; display: inline-block; margin-top: 10px;">Start Video Call</a>
+      </div>
+    </div>
+  </div>
+</body>
+</html>
