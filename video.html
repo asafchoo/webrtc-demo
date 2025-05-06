@@ -30,6 +30,9 @@
     <video id="localVideo" autoplay muted></video>
     <video id="remoteVideo" autoplay></video><br>
   </div>
+   <div id="controlss">
+    <button class="call-button" onclick="endCall()">end Call</button>
+  </div>
 
   <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-database-compat.js"></script>
@@ -66,9 +69,12 @@
       document.getElementById("localVideo").srcObject = localStream;
       localStream.getTracks().forEach(track => pc.addTrack(track, localStream));
     }
-
+      async function endCall() {
+      }
+        
     async function startCall() {
       document.getElementById("controls").style.display = "none";
+      document.getElementById("controlss").style.display = "visable";
       await startMedia();
       const roomId = roomInput.value;
 
