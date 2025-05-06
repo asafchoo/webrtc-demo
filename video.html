@@ -27,8 +27,8 @@ h2 {
 }
 
 #remoteVideo {
-  width: 90%;
-  max-height: 100%;
+  max-width: 90%;
+  height: 100%;
   border-radius: 10px;
   background: #000;
 }
@@ -68,8 +68,8 @@ button:hover {
 </head>
 <body>
   <h2>GOLDEN SPHERE - Video Room</h2>
-    <input id="roomInput" placeholder="Shared Key" />
-  <button onclick="startCall()">Start Call</button>
+    <div id="#controls"><input id="roomInput" placeholder="Shared Key" />
+  <button onclick="startCall()">Start Call</button></div>
   <video id="localVideo" autoplay muted playsinline></video>
   <video id="remoteVideo" autoplay playsinline></video><br>
 
@@ -111,6 +111,7 @@ button:hover {
     }
 
     async function startCall() {
+      document.getElementById("controls").style.display = "none";
       await startMedia();
       const roomId = roomInput.value;
 
