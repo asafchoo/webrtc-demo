@@ -18,11 +18,13 @@
   </style>
 </head>
 <body>
-  <h2>GOLDEN SPHERE - Video Room</h2>
+  <h2>GOLDEN SPHERE - Video Room ver 1.0</h2>
+  <div><input id="roomInput" placeholder="Room ID" />
+  <button class="call-button" onclick="startCall()">Start Call</button></div>
+  
   <video id="localVideo" autoplay muted></video>
   <video id="remoteVideo" autoplay></video><br>
-  <input id="roomInput" placeholder="Room ID" />
-  <button onclick="startCall()">Start Call</button>
+ 
 
   <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-database-compat.js"></script>
